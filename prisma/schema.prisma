@@ -1,0 +1,110 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                   String    @id @default(cuid())
+  username             String    @unique
+  displayName          String
+  email                String    @unique
+  passwordHash         String
+  bio                  String?
+  avatarUrl            String?
+  walletAddress        String    @unique  // Solana public key
+  encryptedPrivateKey  String             // AES-256 encrypted
+  usdcBalance          Float     @default(0)
+  lastOnChainBalance   Float     @default(0)
+  totalEarned          Float     @default(0)
+  totalSpent           Float     @default(0)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  posts                Post[]    @relation("AuthoredPosts")
+  ownedPosts           Post[]    @relation("OwnedPosts")
+  replies              Reply[]
+  transactions         Transaction[]
+  notifications        Notification[]
+  stealsMade           StealHistory[] @relation("Stealer")
+  stealsReceived       StealHistory[] @relation("StolenFrom")
+}
+
+model Post {
+  id               String    @id @default(cuid())
+  content          String
+  imageUrl         String?
+  
+  authorId         String
+  author           User      @relation("AuthoredPosts", fields: [authorId], references: [id])
+  
+  currentOwnerId   String
+  currentOwner     User      @relation("OwnedPosts", fields: [currentOwnerId], references: [id])
+  
+  usdcAmountLocked Float
+  stealPrice       Float
+  stolenCount      Int       @default(0)
+  replyCount       Int       @default(0)
+  
+  isBoosted        Boolean   @default(false)
+  boostExpiry      DateTime?
+  
+  isActive         Boolean   @default(true)
+  
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  replies          Reply[]
+  stealHistory     StealHistory[]
+  transactions     Transaction[]
+}
+
+model Reply {
+  id        String   @id @default(cuid())
+  content   String
+  usdcCost  Float
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id])
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model StealHistory {
+  id           String   @id @default(cuid())
+  postId       String
+  post         Post     @relation(fields: [postId], references: [id])
+  stealerId    String
+  stealer      User     @relation("Stealer", fields: [stealerId], references: [id])
+  stolenFromId String
+  stolenFrom   User     @relation("StolenFrom", fields: [stolenFromId], references: [id])
+  amountPaid   Float
+  timestamp    DateTime @default(now())
+}
+
+model Transaction {
+  id          String          @id @default(cuid())
+  userId      String
+  user        User            @relation(fields: [userId], references: [id])
+  type        String // Since SQLite doesn't support enums natively out of the box easily we use string
+  amount      Float           // positive = earned, negative = spent
+  postId      String?
+  post        Post?           @relation(fields: [postId], references: [id])
+  txSignature String?         // Solana transaction signature
+  note        String?
+  createdAt   DateTime        @default(now())
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  type      String
+  message   String
+  postId    String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
