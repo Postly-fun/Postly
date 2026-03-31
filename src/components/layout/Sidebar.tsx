@@ -113,7 +113,7 @@ export default function Sidebar({ currentPath, user, mobile = false }: any) {
             </div>
           </>
         ) : (
-          <Link href="/">
+          <div onClick={() => setAuthModalOpen(true)} className="cursor-pointer">
             <div className="flex items-center gap-3 p-3 rounded-2xl bg-gradient-to-br from-purple-500 to-purple-700 text-white shadow-lg hover:shadow-purple-500/20 transition-all font-bold group">
               <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
                  <UserIcon className="w-4 h-4" />
@@ -121,7 +121,7 @@ export default function Sidebar({ currentPath, user, mobile = false }: any) {
               Sign In to Postly
               <ArrowRight className="w-4 h-4 ml-auto group-hover:translate-x-1 transition-transform" />
             </div>
-          </Link>
+          </div>
         )}
       </div>
     </aside>

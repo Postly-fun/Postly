@@ -1,8 +1,11 @@
 import { Button } from '@/components/ui/button';
 import { Trophy, TrendingUp, Gem, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
+import { useStore } from '@/store/useStore';
 
 export default function RightSidebar({ user }: any) {
+  const { setAuthModalOpen } = useStore();
+  
   return (
     <aside className="w-[320px] h-screen sticky top-0 py-6 px-4 hidden xl:block flex-col gap-6">
       
@@ -40,11 +43,9 @@ export default function RightSidebar({ user }: any) {
         <div className="bg-gradient-to-br from-purple-600 to-purple-800 rounded-2xl p-6 text-white shadow-lg mb-6">
           <h3 className="text-xl font-bold mb-2">Join the Future of Social</h3>
           <p className="text-purple-100 text-sm mb-6">Post, boost, and earn real USDC. Back your words with stakes.</p>
-          <Link href="/">
-            <Button className="w-full bg-white text-purple-700 hover:bg-gray-100 rounded-full font-bold">
-              Sign Up Now
-            </Button>
-          </Link>
+          <Button onClick={() => setAuthModalOpen(true)} className="w-full bg-white text-purple-700 hover:bg-gray-100 rounded-full font-bold">
+            Sign Up Now
+          </Button>
         </div>
       )}
 
