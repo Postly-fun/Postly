@@ -7,6 +7,8 @@ interface User {
   email: string;
   bio?: string;
   avatarUrl?: string;
+  xHandle?: string;
+  telegramHandle?: string;
   walletAddress: string;
   usdcBalance: number;
 }
