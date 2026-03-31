@@ -19,6 +19,8 @@ export default function SettingsPage() {
     bio: user?.bio || '',
     email: user?.email || '',
     avatarUrl: user?.avatarUrl || '',
+    xHandle: user?.xHandle || '',
+    telegramHandle: user?.telegramHandle || '',
     password: '',
   });
 
@@ -112,6 +114,27 @@ export default function SettingsPage() {
                     placeholder="Tell the world about yourself..."
                     className="resize-none h-24"
                   />
+               </div>
+
+               <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="xHandle">X Handle (Optional)</Label>
+                    <Input 
+                      id="xHandle" 
+                      value={formData.xHandle}
+                      onChange={(e) => setFormData({ ...formData, xHandle: e.target.value })}
+                      placeholder="@username"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="telegramHandle">Telegram Handle (Optional)</Label>
+                    <Input 
+                      id="telegramHandle" 
+                      value={formData.telegramHandle}
+                      onChange={(e) => setFormData({ ...formData, telegramHandle: e.target.value })}
+                      placeholder="@username"
+                    />
+                  </div>
                </div>
 
                <Button disabled={isSaving} type="submit" className="w-full sm:w-auto bg-purple-600 hover:bg-purple-700">

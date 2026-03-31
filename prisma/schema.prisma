@@ -16,6 +16,8 @@ model User {
   passwordHash         String
   bio                  String?
   avatarUrl            String?
+  xHandle              String?
+  telegramHandle       String?
   walletAddress        String    @unique  // Solana public key
   encryptedPrivateKey  String             // AES-256 encrypted
   usdcBalance          Float     @default(0)
@@ -28,6 +30,7 @@ model User {
   posts                Post[]    @relation("AuthoredPosts")
   ownedPosts           Post[]    @relation("OwnedPosts")
   replies              Reply[]
+  reactions            Reaction[]
   transactions         Transaction[]
   notifications        Notification[]
   stealsMade           StealHistory[] @relation("Stealer")
@@ -54,13 +57,27 @@ model Post {
   boostExpiry      DateTime?
   
   isActive         Boolean   @default(true)
+  totalEarnings    Float     @default(0)
   
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
   replies          Reply[]
   stealHistory     StealHistory[]
+  reactions        Reaction[]
   transactions     Transaction[]
+}
+
+model Reaction {
+  id        String   @id @default(cuid())
+  emoji     String   // 🔥, 🚀, 💎, ❤️
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([userId, postId, emoji])
 }
 
 model Reply {

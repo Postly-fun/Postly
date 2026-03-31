@@ -22,10 +22,10 @@ import { formatDistanceToNow } from 'date-fns';
 export default function WalletPage() {
   const { user, setUser } = useStore();
   const queryClient = useQueryClient();
-  const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
   const [depositModalOpen, setDepositModalOpen] = useState(false);
-  const [withdrawAddress, setWithdrawAddress] = useState('');
-  const [withdrawAmount, setWithdrawAmount] = useState('');
+  const [privateKey, setPrivateKey] = useState<string | null>(null);
+  const [isExportLoading, setIsExportLoading] = useState(false);
 
   const { data: txData, isLoading } = useQuery({
     queryKey: ['transactions'],
@@ -51,39 +51,35 @@ export default function WalletPage() {
     }
   });
 
-  const withdrawMutation = useMutation({
-    mutationFn: async () => {
-      const res = await fetch('/api/wallet/withdraw', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ toAddress: withdrawAddress, amount: withdrawAmount })
-      });
+  const fetchPrivateKey = async () => {
+    setIsExportLoading(true);
+    try {
+      const res = await fetch('/api/wallet/export');
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Withdrawal failed');
-      return data;
-    },
-    onSuccess: (data) => {
-      toast.success('Withdrawal successful!');
-      if (user) setUser({ ...user, usdcBalance: data.balance });
-      setWithdrawModalOpen(false);
-      setWithdrawAddress('');
-      setWithdrawAmount('');
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
-    },
-    onError: (error: any) => {
-      toast.error(error.message);
+      if (data.privateKey) {
+        setPrivateKey(data.privateKey);
+      } else {
+        toast.error(data.error || 'Failed to export private key');
+      }
+    } catch (err) {
+      toast.error('Failed to export private key');
+    } finally {
+      setIsExportLoading(false);
     }
-  });
+  };
+
+  const copyPrivateKey = () => {
+    if (privateKey) {
+      navigator.clipboard.writeText(privateKey);
+      toast.success('Private key copied! Do NOT share this with anyone.');
+    }
+  };
 
   const copyAddress = () => {
     if (user?.walletAddress) {
       navigator.clipboard.writeText(user.walletAddress);
       toast.success('Address copied to clipboard');
     }
-  };
-
-  const handleMaxAmount = () => {
-    if (user) setWithdrawAmount(user.usdcBalance.toString());
   };
 
   if (!user) return null;
@@ -111,10 +107,10 @@ export default function WalletPage() {
             <ArrowDownLeft className="mr-2" /> Deposit
           </Button>
           <Button 
-            onClick={() => setWithdrawModalOpen(true)}
+            onClick={() => setExportModalOpen(true)}
             className="flex-1 border-white/30 hover:bg-white/10 text-white hover:text-white rounded-full py-6 font-bold text-lg"
           >
-            <ArrowUpRight className="mr-2" /> Withdraw
+            <ArrowUpRight className="mr-2" /> Export Key
           </Button>
         </div>
       </div>
@@ -153,13 +149,13 @@ export default function WalletPage() {
 
       <div className="m-4">
          <h3 className="font-bold text-lg mb-4 text-gray-900 px-2 flex items-center gap-2">
-           <RefreshCw className="w-4 h-4 text-purple-500" />
-           Transaction History
+            <RefreshCw className="w-4 h-4 text-purple-500" />
+            Transaction History
          </h3>
          {isLoading ? (
             <div className="text-gray-500 text-center py-8 bg-white/40 rounded-2xl border border-purple-100/30">
-              <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 opacity-20" />
-              Loading history...
+               <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 opacity-20" />
+               Loading history...
             </div>
          ) : txData?.transactions?.length === 0 ? (
             <div className="text-gray-500 text-center py-8 border border-purple-100/30 rounded-2xl bg-white/40">No transactions found yet.</div>
@@ -200,65 +196,63 @@ export default function WalletPage() {
          )}
       </div>
 
-      {/* Withdraw Modal */}
-      <Dialog open={withdrawModalOpen} onOpenChange={setWithdrawModalOpen}>
+      {/* Export Modal */}
+      <Dialog open={exportModalOpen} onOpenChange={(open) => {
+        setExportModalOpen(open);
+        if (!open) setPrivateKey(null);
+      }}>
         <DialogContent className="sm:max-w-md bg-white rounded-3xl border-none shadow-2xl">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-bold flex items-center gap-2 text-purple-900">
-              <ArrowUpRight className="w-6 h-6 text-purple-600" />
-              Withdraw USDC
+            <DialogTitle className="text-2xl font-bold flex items-center gap-2 text-red-600">
+               <ArrowUpRight className="w-6 h-6" />
+               Export Private Key
             </DialogTitle>
-            <DialogDescription className="text-gray-500 pt-2 text-base">
-              Transfer USDC from your Postly wallet to an external Solana address.
+            <DialogDescription className="text-gray-500 pt-2 text-base font-medium">
+               This will expose your Postly wallet's private key. You can use it to import your funds into apps like Phantom or Solflare.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-6 py-8">
-            <div className="grid gap-3">
-              <Label htmlFor="address" className="text-sm font-bold text-gray-700 ml-1">Destination Address</Label>
-              <Input
-                id="address"
-                placeholder="Paste Solana address..."
-                className="rounded-2xl border-purple-100 focus-visible:ring-purple-600 h-14 text-base"
-                value={withdrawAddress}
-                onChange={(e) => setWithdrawAddress(e.target.value)}
-              />
-            </div>
-            <div className="grid gap-3">
-              <div className="flex justify-between items-end px-1">
-                <Label htmlFor="amount" className="text-sm font-bold text-gray-700">Amount (USDC)</Label>
-                <button 
-                  className="text-xs font-bold text-purple-600 hover:text-purple-700 hover:underline transition-all"
-                  onClick={handleMaxAmount}
+
+          <div className="py-8">
+            {!privateKey ? (
+              <div className="bg-red-50 border border-red-100 p-6 rounded-2xl flex flex-col items-center gap-4">
+                <p className="text-sm text-red-700 font-bold text-center">
+                  WARNING: Never share your private key with anyone! Anyone who has your private key can steal your funds.
+                </p>
+                <Button 
+                  onClick={fetchPrivateKey}
+                  disabled={isExportLoading}
+                  className="w-full bg-red-600 hover:bg-red-700 text-white rounded-xl h-14 font-bold text-lg shadow-xl shadow-red-500/20"
                 >
-                  MAX: {user.usdcBalance.toFixed(2)}
-                </button>
+                  {isExportLoading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : 'Reveal Private Key'}
+                </Button>
               </div>
-              <div className="relative">
-                <Input
-                  id="amount"
-                  type="number"
-                  placeholder="0.00"
-                  className="rounded-2xl border-purple-100 focus-visible:ring-purple-600 h-14 pr-16 text-xl font-bold geist-mono"
-                  value={withdrawAmount}
-                  onChange={(e) => setWithdrawAmount(e.target.value)}
-                />
-                <span className="absolute right-4 top-4 text-sm font-bold text-gray-400">USDC</span>
+            ) : (
+              <div className="flex flex-col gap-4">
+                <div className="relative group">
+                  <textarea 
+                    readOnly
+                    value={privateKey}
+                    className="w-full geist-mono text-sm p-4 h-24 rounded-2xl bg-gray-50 text-gray-900 border-2 border-gray-100 focus:outline-none cursor-pointer hover:bg-gray-100 transition-all font-medium break-all resize-none"
+                    onClick={copyPrivateKey}
+                  />
+                  <button onClick={copyPrivateKey} className="absolute right-3 bottom-3 text-purple-500 p-2 bg-white shadow-sm border border-purple-50 rounded-lg hover:bg-purple-50 transition-colors">
+                    <Copy className="w-4 h-4" />
+                  </button>
+                </div>
+                <p className="text-xs text-gray-400 text-center italic">
+                  Copy and import this key into Phantom or Solflare as a "Secret Key" or "Private Key".
+                </p>
               </div>
-            </div>
+            )}
           </div>
-          <DialogFooter className="flex flex-col sm:flex-row gap-3 pt-2">
+
+          <DialogFooter className="pt-2">
             <Button
-              type="button"
-              className="flex-1 bg-purple-600 hover:bg-purple-700 text-white rounded-2xl h-14 font-bold text-lg shadow-xl shadow-purple-500/20 active:scale-[0.98] transition-all"
-              onClick={() => withdrawMutation.mutate()}
-              disabled={withdrawMutation.isPending || !withdrawAddress || !withdrawAmount}
+              variant="outline"
+              className="w-full border-2 border-purple-100 text-purple-600 hover:bg-purple-50 rounded-2xl h-14 font-bold text-lg"
+              onClick={() => setExportModalOpen(false)}
             >
-              {withdrawMutation.isPending ? (
-                <>
-                  <Loader2 className="w-5 h-5 mr-3 animate-spin" />
-                  Broadcasting...
-                </>
-              ) : 'Withdraw Funds'}
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>

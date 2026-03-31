@@ -26,13 +26,23 @@ export default function LandingPage() {
             <span className="nav-brand text-3xl font-bold text-purple-700 tracking-tight">Postly</span>
           </div>
           <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-600">
-            <Link href="#how-it-works" className="hover:text-purple-600 transition-colors">How It Works</Link>
-            <Link href="#features" className="hover:text-purple-600 transition-colors">Features</Link>
-            <Link href="#faq" className="hover:text-purple-600 transition-colors">FAQ</Link>
+            <Link href="#how-it-works" className="hover:text-purple-600 transition-colors lowercase">how it works</Link>
+            <Link href="#boost" className="text-purple-600 hover:text-purple-700 transition-colors flex items-center gap-1 lowercase font-bold">
+              <Rocket className="w-4 h-4" /> boost
+            </Link>
+            <Link href="#features" className="hover:text-purple-600 transition-colors lowercase">features</Link>
+            <Link href="#faq" className="hover:text-purple-600 transition-colors lowercase">faq</Link>
           </nav>
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" className="geist-mono" onClick={() => setAuthModalOpen(true)}>Sign In</Button>
-            <Button className="bg-purple-600 hover:bg-purple-700 text-white geist-mono" onClick={() => setAuthModalOpen(true)}>Get Started</Button>
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-4 text-gray-400">
+              <a href="https://x.com/PostlyDotFun" target="_blank" rel="noopener noreferrer" className="hover:text-purple-600 transition-colors">
+                <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path></svg>
+              </a>
+              <a href="https://t.me/+QoH-U7nS0JdiM2Nl" target="_blank" rel="noopener noreferrer" className="hover:text-purple-600 transition-colors">
+                <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.2-.08-.06-.19-.04-.27-.02-.11.02-1.93 1.23-5.46 3.62-.51.35-.98.52-1.4.51-.46-.01-1.35-.26-2.01-.48-.81-.27-1.45-.42-1.39-.88.03-.24.36-.48.98-.74 3.82-1.66 6.37-2.75 7.63-3.27 3.63-1.51 4.38-1.77 4.87-1.77.11 0 .35.03.5.15.13.1.17.24.18.37l.01.29z"></path></svg>
+              </a>
+            </div>
+            <Button className="bg-purple-600 hover:bg-purple-700 text-white geist-mono rounded-full px-6" onClick={() => setAuthModalOpen(true)}>Get Started</Button>
           </div>
         </div>
       </header>
@@ -49,7 +59,7 @@ export default function LandingPage() {
             animate={{ opacity: 1, y: 0 }}
             className="text-5xl md:text-7xl mb-4 text-gray-900"
           >
-            Post. Steal. Earn.
+            Post. Boost. Earn.
             <br />
             <span className="text-purple-600">The Social Network with Real Stakes.</span>
           </motion.h1>
@@ -67,9 +77,14 @@ export default function LandingPage() {
             transition={{ delay: 0.2 }}
             className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12"
           >
-            <Button size="lg" onClick={() => setAuthModalOpen(true)} className="h-14 px-8 text-lg bg-gradient-to-r from-purple-600 to-purple-500 hover:opacity-90 transition-opacity geist-mono text-white rounded-full shadow-lg shadow-purple-500/20">
-              Launch App <ArrowRight className="ml-2 w-5 h-5" />
-            </Button>
+            <Link href="/app">
+              <Button 
+                size="lg" 
+                className="h-14 px-8 text-lg bg-gradient-to-r from-purple-600 to-purple-500 hover:opacity-90 transition-opacity geist-mono text-white rounded-full shadow-lg shadow-purple-500/20"
+              >
+                Launch App <ArrowRight className="ml-2 w-5 h-5" />
+              </Button>
+            </Link>
             <Link href="#how-it-works">
               <Button size="lg" variant="outline" className="h-14 px-8 text-lg border-purple-200 text-purple-700 hover:bg-purple-50 geist-mono rounded-full">
                 How It Works &darr;
@@ -107,6 +122,42 @@ export default function LandingPage() {
                 <p className="text-gray-600 leading-relaxed">{step.desc}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* How Boost Works */}
+      <section id="boost" className="py-24 bg-white/50 border-y border-purple-100">
+        <div className="container mx-auto px-6 max-w-5xl">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl text-gray-900 mb-4 font-bold flex items-center justify-center gap-3">
+              <Rocket className="w-10 h-10 text-purple-600" /> How Boosting Works
+            </h2>
+            <p className="text-xl text-gray-600">Give your voice the spotlight it deserves.</p>
+          </div>
+          
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="p-8 rounded-3xl bg-white border border-purple-100 shadow-sm">
+              <div className="w-12 h-12 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center mb-6">
+                <Sparkles className="w-6 h-6" />
+              </div>
+              <h3 className="text-2xl font-bold mb-3">Priority Feed</h3>
+              <p className="text-gray-600">Boosted posts are pinned to the top of the global feed, ensuring every active user sees your content first.</p>
+            </div>
+            <div className="p-8 rounded-3xl bg-white border border-purple-100 shadow-sm">
+              <div className="w-12 h-12 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center mb-6">
+                <Rocket className="w-6 h-6" />
+              </div>
+              <h3 className="text-2xl font-bold mb-3">Rocket Badge</h3>
+              <p className="text-gray-600">Your post gains a premium 🚀 Rocket badge, signaling high-value content to potential stealers and commenters.</p>
+            </div>
+            <div className="p-8 rounded-3xl bg-white border border-purple-100 shadow-sm">
+              <div className="w-12 h-12 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center mb-6">
+                <Coins className="w-6 h-6" />
+              </div>
+              <h3 className="text-2xl font-bold mb-3">Hyper-Inflationary</h3>
+              <p className="text-gray-600 text-base font-medium">Boost any post starting at <span className="text-purple-600 geist-mono font-bold">5.00 USDC</span>. After each boost, the platform-wide price **doubles**.</p>
+            </div>
           </div>
         </div>
       </section>
@@ -233,8 +284,8 @@ export default function LandingPage() {
                 {[
                   { action: "Create Post", cost: "User-set (min 0.1 USDC)", recv: "Locked in post" },
                   { action: "Steal Post", cost: "2× locked amount", recv: "Current post owner" },
-                  { action: "Reply to Post", cost: "0.05 USDC", recv: "Current post owner" },
-                  { action: "Boost Post", cost: "0.25 USDC", recv: "Platform treasury" },
+                  { action: "Reply to Post", cost: "0.50 USDC", recv: "Current post owner" },
+                  { action: "Boost Post", cost: "Starts at 5.00 USDC (Doubles each time)", recv: "Platform treasury" },
                   { action: "Deposit", cost: "Free", recv: "—" },
                   { action: "Withdraw", cost: "~0.001 USDC", recv: "Solana network" },
                 ].map((row, i) => (
@@ -285,9 +336,11 @@ export default function LandingPage() {
         <div className="container mx-auto px-6 max-w-3xl">
           <h2 className="text-5xl md:text-6xl mb-6">Ready to Post with Stakes?</h2>
           <p className="text-xl text-purple-200 mb-10">Join Postly and turn your words into assets.</p>
-          <Button size="lg" onClick={() => setAuthModalOpen(true)} className="h-16 px-10 text-xl bg-white text-purple-700 hover:bg-gray-100 rounded-full geist-mono shadow-xl transition-all hover:scale-105">
-            Launch App <ArrowRight className="ml-2 w-6 h-6" />
-          </Button>
+          <Link href="/app">
+            <Button size="lg" className="h-16 px-10 text-xl bg-white text-purple-700 hover:bg-gray-100 rounded-full geist-mono shadow-xl transition-all hover:scale-105">
+              Launch App <ArrowRight className="ml-2 w-6 h-6" />
+            </Button>
+          </Link>
         </div>
       </section>
 
@@ -299,13 +352,17 @@ export default function LandingPage() {
               <img src="/logo.png" alt="Postly Logo" className="h-10 w-auto object-contain" />
               <span className="geist-mono text-3xl font-bold text-gray-900">Postly</span>
             </div>
-            <span className="text-gray-500 italic text-sm">Post. Steal. Earn.</span>
+            <span className="text-gray-500 italic text-sm">Post. Boost. Earn.</span>
           </div>
-          <div className="flex items-center gap-6 text-sm text-gray-500">
-            <Link href="#" className="hover:text-purple-600">Privacy Policy</Link>
-            <Link href="#" className="hover:text-purple-600">Terms of Service</Link>
-            <Link href="#" className="hover:text-purple-600">Docs</Link>
-            <Link href="#" className="hover:text-purple-600">Twitter/X</Link>
+          <div className="flex items-center gap-8 text-sm font-medium text-gray-500">
+            <a href="https://x.com/PostlyDotFun" target="_blank" rel="noopener noreferrer" className="hover:text-purple-600 flex items-center gap-2">
+               <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+               X.com
+            </a>
+            <a href="https://t.me/+QoH-U7nS0JdiM2Nl" target="_blank" rel="noopener noreferrer" className="hover:text-purple-600 flex items-center gap-2">
+               <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M11.944 0C5.344 0 0 5.344 0 11.944c0 6.6 5.344 11.944 11.944 11.944 6.6 0 11.944-5.344 11.944-11.944C23.888 5.344 18.544 0 11.944 0zm5.112 8.333l-1.722 8.111c-.13.578-.472.72-.958.452l-2.617-1.928-1.263 1.217c-.14.14-.257.257-.527.257l.188-2.66 4.842-4.375c.21-.186-.046-.29-.326-.104l-5.986 3.77-2.578-.805c-.56-.175-.572-.56.117-.83l10.07-3.884c.466-.17.872.107.74.777z"/></svg>
+               Telegram
+            </a>
           </div>
           <div className="flex flex-col items-center md:items-end text-sm text-gray-400">
             <span className="bg-purple-50 text-purple-600 px-3 py-1 rounded-full text-xs font-semibold mb-2">Built on Solana</span>

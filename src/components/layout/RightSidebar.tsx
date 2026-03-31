@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { Trophy, TrendingUp, Gem } from 'lucide-react';
+import { Trophy, TrendingUp, Gem, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 
 export default function RightSidebar({ user }: any) {
@@ -21,20 +21,32 @@ export default function RightSidebar({ user }: any) {
         />
       </div>
 
-      {/* Mini Wallet */}
-      <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm mb-6">
-        <div className="flex items-center gap-2 mb-4 text-purple-600">
-          <Gem className="w-5 h-5" />
-          <h3 className="font-bold">Your Wallet</h3>
+      {/* Mini Wallet / Join Prompt */}
+      {user ? (
+        <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm mb-6">
+          <div className="flex items-center gap-2 mb-4 text-purple-600">
+            <Gem className="w-5 h-5" />
+            <h3 className="font-bold">Your Wallet</h3>
+          </div>
+          <p className="text-gray-500 text-sm mb-1">Available Balance</p>
+          <p className="geist-mono text-3xl text-gray-900 mb-4">{user.usdcBalance.toFixed(2)} <span className="text-lg text-gray-500">USDC</span></p>
+          <Link href="/app/wallet">
+            <Button className="w-full bg-purple-50 text-purple-700 hover:bg-purple-100 geist-mono rounded-full font-bold">
+              Manage USDC
+            </Button>
+          </Link>
         </div>
-        <p className="text-gray-500 text-sm mb-1">Available Balance</p>
-        <p className="geist-mono text-3xl text-gray-900 mb-4">{user.usdcBalance.toFixed(2)} <span className="text-lg text-gray-500">USDC</span></p>
-        <Link href="/app/wallet">
-          <Button className="w-full bg-purple-50 text-purple-700 hover:bg-purple-100 geist-mono rounded-full font-bold">
-            Manage USDC
-          </Button>
-        </Link>
-      </div>
+      ) : (
+        <div className="bg-gradient-to-br from-purple-600 to-purple-800 rounded-2xl p-6 text-white shadow-lg mb-6">
+          <h3 className="text-xl font-bold mb-2">Join the Future of Social</h3>
+          <p className="text-purple-100 text-sm mb-6">Post, boost, and earn real USDC. Back your words with stakes.</p>
+          <Link href="/">
+            <Button className="w-full bg-white text-purple-700 hover:bg-gray-100 rounded-full font-bold">
+              Sign Up Now
+            </Button>
+          </Link>
+        </div>
+      )}
 
       {/* Trending Posts */}
       <div className="bg-gray-50 rounded-2xl border border-gray-200 p-5 mb-6">

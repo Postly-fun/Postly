@@ -7,7 +7,7 @@ import { signToken, setAuthCookie } from '@/lib/auth';
 
 export async function POST(req: Request) {
   try {
-    const { email, username, displayName, password } = await req.json();
+    const { email, username, displayName, password, xHandle, telegramHandle } = await req.json();
 
     if (!email || !username || !password || !displayName) {
       return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
@@ -35,6 +35,8 @@ export async function POST(req: Request) {
         passwordHash,
         walletAddress: wallet.publicKey,
         encryptedPrivateKey,
+        xHandle,
+        telegramHandle,
         usdcBalance: 0, 
       },
       select: {
@@ -46,6 +48,8 @@ export async function POST(req: Request) {
         avatarUrl: true,
         walletAddress: true,
         usdcBalance: true,
+        xHandle: true,
+        telegramHandle: true,
       }
     });
 

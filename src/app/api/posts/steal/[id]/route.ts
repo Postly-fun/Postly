@@ -48,6 +48,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
           usdcAmountLocked: stealCost,
           stealPrice: newStealPrice,
           stolenCount: { increment: 1 },
+          totalEarnings: { increment: stealCost }
         }
       });
 

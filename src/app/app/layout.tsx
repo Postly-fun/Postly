@@ -5,9 +5,10 @@ import { useStore } from '@/store/useStore';
 import { useRouter, usePathname } from 'next/navigation';
 import Sidebar from '@/components/layout/Sidebar';
 import RightSidebar from '@/components/layout/RightSidebar';
+import AuthModal from '@/components/auth/AuthModal';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const { user, setUser, setIsLoading, isLoading } = useStore();
+  const { user, setUser, setIsLoading, isLoading, isAuthModalOpen, setAuthModalOpen } = useStore();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -18,12 +19,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         if (res.ok) {
           const data = await res.json();
           setUser(data.user);
-        } else {
-          router.push('/');
         }
       } catch (error) {
-        console.error(error);
-        router.push('/');
+        console.error("Auth check failed:", error);
       } finally {
         setIsLoading(false);
       }
@@ -31,7 +29,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     
     if (!user) checkAuth();
     else setIsLoading(false);
-  }, [user, setUser, setIsLoading, router]);
+  }, [user, setUser, setIsLoading]);
 
   if (isLoading) {
     return (
@@ -41,10 +39,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     );
   }
   
-  if (!user) return null;
-
+  // Render layout even if user is null (Guest Mode)
   return (
     <div className="flex justify-center min-h-screen app-page bg-transparent text-gray-900 selection:bg-purple-200">
+      <AuthModal isOpen={isAuthModalOpen} onClose={() => setAuthModalOpen(false)} />
+      
       <div className="hidden sm:block">
         <Sidebar currentPath={pathname} user={user} />
       </div>

@@ -17,7 +17,9 @@ export default function AuthModal({ isOpen, onClose }: { isOpen: boolean, onClos
     email: '',
     username: '',
     displayName: '',
-    password: ''
+    password: '',
+    xHandle: '',
+    telegramHandle: ''
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -87,6 +89,26 @@ export default function AuthModal({ isOpen, onClose }: { isOpen: boolean, onClos
                   onChange={(e) => setFormData({...formData, username: e.target.value})}
                   required 
                 />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="xHandle" className="text-xs text-gray-500">X Handle (Optional)</Label>
+                  <Input 
+                    id="xHandle" 
+                    placeholder="@username"
+                    value={formData.xHandle}
+                    onChange={(e) => setFormData({...formData, xHandle: e.target.value})}
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="telegramHandle" className="text-xs text-gray-500">Telegram (Optional)</Label>
+                  <Input 
+                    id="telegramHandle" 
+                    placeholder="@username"
+                    value={formData.telegramHandle}
+                    onChange={(e) => setFormData({...formData, telegramHandle: e.target.value})}
+                  />
+                </div>
               </div>
             </>
           )}

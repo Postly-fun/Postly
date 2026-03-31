@@ -37,6 +37,8 @@ export async function POST(req: Request) {
         email: user.email,
         bio: user.bio,
         avatarUrl: user.avatarUrl,
+        xHandle: user.xHandle,
+        telegramHandle: user.telegramHandle,
         walletAddress: user.walletAddress,
         usdcBalance: user.usdcBalance,
       } 

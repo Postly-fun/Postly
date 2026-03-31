@@ -21,6 +21,8 @@ export async function GET() {
         avatarUrl: true,
         walletAddress: true,
         usdcBalance: true,
+        xHandle: true,
+        telegramHandle: true,
       }
     });
 

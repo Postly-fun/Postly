@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getUserSession } from '@/lib/auth';
 
-const REPLY_COST = parseFloat(process.env.REPLY_COST || '0.05');
+const REPLY_COST = 0.5;
 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   try {
@@ -22,11 +22,13 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     }
 
     const result = await prisma.$transaction(async (tx) => {
+      // 1. Deduct from replier
       await tx.user.update({
         where: { id: replier.id },
         data: { usdcBalance: { decrement: REPLY_COST }, totalSpent: { increment: REPLY_COST } }
       });
 
+      // 2. Pay the current owner of the post
       if (post.currentOwnerId !== replier.id) {
          await tx.user.update({
            where: { id: post.currentOwnerId },
@@ -42,6 +44,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
          });
       }
 
+      // 3. Create the reply record
       const newReply = await tx.reply.create({
         data: {
           content,
@@ -51,11 +54,16 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         }
       });
 
+      // 4. Update post reply count
       await tx.post.update({
          where: { id: post.id },
-         data: { replyCount: { increment: 1 } }
+         data: { 
+           replyCount: { increment: 1 },
+           totalEarnings: { increment: 0.5 }
+         }
       });
 
+      // 5. Create transaction for the replier
       await tx.transaction.create({
         data: { userId: replier.id, type: 'REPLY_PAID', amount: -REPLY_COST, postId: post.id }
       });

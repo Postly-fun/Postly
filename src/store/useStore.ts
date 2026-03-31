@@ -17,6 +17,8 @@ interface StoreState {
   updateBalance: (newBalance: number) => void;
   isLoading: boolean;
   setIsLoading: (isLoading: boolean) => void;
+  isAuthModalOpen: boolean;
+  setAuthModalOpen: (isAuthModalOpen: boolean) => void;
 }
 
 export const useStore = create<StoreState>((set) => ({
@@ -27,4 +29,6 @@ export const useStore = create<StoreState>((set) => ({
   })),
   isLoading: true,
   setIsLoading: (isLoading) => set({ isLoading }),
+  isAuthModalOpen: false,
+  setAuthModalOpen: (isAuthModalOpen) => set({ isAuthModalOpen }),
 }));

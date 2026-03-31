@@ -11,9 +11,10 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import AuthModal from '@/components/auth/AuthModal';
 
 export default function FeedPage() {
-  const { user, setUser } = useStore();
+  const { user, setUser, isAuthModalOpen, setAuthModalOpen } = useStore();
   const queryClient = useQueryClient();
   const [tab, setTab] = useState('for-you');
   const [content, setContent] = useState('');
@@ -21,6 +22,18 @@ export default function FeedPage() {
 
   // Modals state
   const [stealPost, setStealPost] = useState<any>(null);
+  const [replyPost, setReplyPost] = useState<any>(null);
+  const [replyContent, setReplyContent] = useState('');
+
+  // Fetch Dynamic Boost Price
+  const { data: boostConfig } = useQuery({
+    queryKey: ['boost-price'],
+    queryFn: async () => {
+      const res = await fetch('/api/config/boost-price');
+      return res.json();
+    }
+  });
+  const currentBoostPrice = boostConfig?.currentPrice || 5;
 
   const { data, isLoading } = useQuery({
     queryKey: ['posts', tab],
@@ -66,11 +79,38 @@ export default function FeedPage() {
     onError: (err: any) => toast.error(err.message)
   });
 
-  if (!user) return null;
+  const replyMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/posts/reply/${replyPost.id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: replyContent })
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error);
+      return json;
+    },
+    onSuccess: () => {
+      toast.success(`Reply posted! 0.5 USDC paid to owner.`);
+      setReplyPost(null);
+      setReplyContent('');
+      queryClient.invalidateQueries({ queryKey: ['posts'] });
+      fetch('/api/auth/me').then(res => res.json()).then(d => { if(d.user) setUser(d.user); });
+    },
+    onError: (err: any) => toast.error(err.message)
+  });
 
   const cost = parseFloat(usdcAmount) || 0;
   const stealPrice = cost * 2;
-  const canPost = content.trim().length > 0 && cost >= 0.1 && user.usdcBalance >= cost;
+  const canPost = content.trim().length > 0 && cost >= 0.1 && (user?.usdcBalance || 0) >= cost;
+
+  const handleActionIntercept = (callback: () => void) => {
+    if (!user) {
+      setAuthModalOpen(true);
+      return;
+    }
+    callback();
+  };
 
   return (
     <div className="flex flex-col w-full h-full relative">
@@ -80,15 +120,17 @@ export default function FeedPage() {
 
       {/* Composer */}
       <div className="p-4 border-b border-gray-100 bg-white flex gap-4">
-        <Avatar className="w-10 h-10 border border-purple-100 shadow-sm">
-          <AvatarImage src={user.avatarUrl} className="object-cover" />
-          <AvatarFallback className="bg-purple-100 text-purple-700 font-bold">{user.displayName[0]}</AvatarFallback>
+        <Avatar className="w-10 h-10 border border-purple-100 shadow-sm grow-0 shrink-0">
+          <AvatarImage src={user?.avatarUrl} className="object-cover" />
+          <AvatarFallback className="bg-purple-100 text-purple-700 font-bold">{user?.displayName?.[0] || '?'}</AvatarFallback>
         </Avatar>
         <div className="flex-1">
           <Textarea 
-            placeholder="What's worth paying for?" 
+            placeholder={user ? "What's worth paying for?" : "Sign in to post with stakes..."}
             value={content}
             onChange={(e) => setContent(e.target.value)}
+            onClick={() => !user && setAuthModalOpen(true)}
+            readOnly={!user}
             className="border-none focus-visible:ring-0 text-xl resize-none min-h-[80px] p-0 placeholder:text-gray-400 mb-2"
             maxLength={280}
           />
@@ -112,16 +154,18 @@ export default function FeedPage() {
              
              <div className="bg-gray-50 rounded-lg p-3 flex justify-between items-center text-sm border border-gray-100">
                 <span className="text-gray-500">Steal price will be <b className="geist-mono text-purple-600">{stealPrice.toFixed(2)} USDC</b></span>
-                <span className={`${user.usdcBalance < cost ? 'text-red-500 font-bold' : 'text-gray-500'}`}>Balance: <b className="geist-mono">{user.usdcBalance.toFixed(2)} USDC</b></span>
+                {user && (
+                   <span className={`${user.usdcBalance < cost ? 'text-red-500 font-bold' : 'text-gray-500'}`}>Balance: <b className="geist-mono">{user.usdcBalance.toFixed(2)} USDC</b></span>
+                )}
              </div>
              
              <div className="flex justify-end pt-2">
                <Button 
-                  onClick={() => postMutation.mutate()} 
-                  disabled={!canPost || postMutation.isPending}
+                  onClick={() => handleActionIntercept(() => postMutation.mutate())} 
+                  disabled={ (user && !canPost) || postMutation.isPending}
                   className="rounded-full px-6 bg-purple-600 hover:bg-purple-700 font-bold"
                >
-                 {postMutation.isPending ? 'Posting...' : 'Post'}
+                 {postMutation.isPending ? 'Posting...' : user ? 'Post' : 'Sign In to Post'}
                </Button>
              </div>
           </div>
@@ -146,21 +190,44 @@ export default function FeedPage() {
              <PostCard 
                 key={post.id} 
                 post={post} 
-                onSteal={() => {
-                  if (post.currentOwnerId === user.id) {
-                    toast.error("You cannot steal your own post!");
-                  } else {
-                    setStealPost(post);
+                onSteal={() => handleActionIntercept(() => {
+                  if (post.currentOwnerId === user?.id) {
+                    toast.error("You already own this post.");
+                    return;
                   }
-                }}
-                onReply={(id:string) => alert(`Reply to ${id} coming soon to UI`)}
-                onBoost={(id:string) => alert(`Boost ${id} coming soon`)}
+                  setStealPost(post);
+                })}
+                onReply={() => handleActionIntercept(() => {
+                   setReplyPost(post);
+                   setReplyContent('');
+                })}
+                onBoost={() => handleActionIntercept(async () => {
+                   if ( (user?.usdcBalance || 0) < currentBoostPrice) {
+                     toast.error(`Insufficient balance. Boost now costs ${currentBoostPrice.toFixed(2)} USDC.`);
+                     return;
+                   }
+                   toast.loading(`Boosting post for ${currentBoostPrice.toFixed(2)} USDC...`);
+                   const res = await fetch(`/api/posts/boost/${post.id}`, { method: 'POST' });
+                   if (res.ok) {
+                     toast.dismiss();
+                     toast.success("Post Boosted! Price has doubled for the next one.");
+                     queryClient.invalidateQueries({ queryKey: ['posts'] });
+                     queryClient.invalidateQueries({ queryKey: ['boost-price'] });
+                     fetch('/api/auth/me').then(res => res.json()).then(d => { if(d.user) setUser(d.user); });
+                   } else {
+                     toast.dismiss();
+                     const data = await res.json();
+                     toast.error(data.error || "Failed to boost");
+                   }
+                })}
              />
           ))
         )}
         
         {data?.posts?.length === 0 && (
           <div className="p-8 text-center text-gray-500">No posts yet. Be the first to lock in USDC!</div>
+        ) || !data && (
+           <div className="p-8 text-center text-gray-500">Could not load feed.</div>
         )}
       </div>
 
@@ -170,7 +237,7 @@ export default function FeedPage() {
           <DialogHeader>
             <DialogTitle className="text-2xl text-purple-900 instrument-serif">Steal This Post?</DialogTitle>
             <DialogDescription className="text-gray-500">
-              You are about to pay double the locked amount to claim ownership.
+               You are about to pay double the locked amount to claim ownership.
             </DialogDescription>
           </DialogHeader>
           {stealPost && (
@@ -197,11 +264,11 @@ export default function FeedPage() {
                   <hr className="border-purple-200 my-1"/>
                   <div className="flex justify-between">
                     <span className="text-gray-500 font-medium">Your Balance:</span>
-                    <span className="font-bold geist-mono text-gray-900">{user.usdcBalance.toFixed(2)} USDC</span>
+                    <span className="font-bold geist-mono text-gray-900">{(user?.usdcBalance || 0).toFixed(2)} USDC</span>
                   </div>
                   <div className="flex justify-between text-xs text-gray-400">
                     <span>After Steal:</span>
-                    <span className="geist-mono">{(user.usdcBalance - stealPost.stealPrice).toFixed(2)} USDC</span>
+                    <span className="geist-mono">{( (user?.usdcBalance || 0) - stealPost.stealPrice).toFixed(2)} USDC</span>
                   </div>
                </div>
             </div>
@@ -209,11 +276,49 @@ export default function FeedPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setStealPost(null)}>Cancel</Button>
             <Button 
-               disabled={user.usdcBalance < (stealPost?.stealPrice || 0) || stealMutation.isPending} 
+               disabled={ (user?.usdcBalance || 0) < (stealPost?.stealPrice || 0) || stealMutation.isPending} 
                onClick={() => stealMutation.mutate(stealPost.id)}
                className="bg-purple-600 hover:bg-purple-700 text-white font-bold"
             >
-              {user.usdcBalance < (stealPost?.stealPrice || 0) ? 'Insufficient Balance' : `Confirm Steal — ${stealPost?.stealPrice.toFixed(2)} USDC`}
+              {(user?.usdcBalance || 0) < (stealPost?.stealPrice || 0) ? 'Insufficient Balance' : `Confirm Steal — ${stealPost?.stealPrice.toFixed(2)} USDC`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reply Modal */}
+      <Dialog open={!!replyPost} onOpenChange={(o) => !o && setReplyPost(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="text-2xl text-purple-900 instrument-serif">Post a Reply</DialogTitle>
+            <DialogDescription className="text-gray-500">
+               Replying costs <b className="text-purple-600 font-bold">0.5 USDC</b>. This fee goes directly to the current post owner. 
+            </DialogDescription>
+          </DialogHeader>
+          {replyPost && (
+            <div className="py-4">
+               <div className="bg-gray-50 border border-gray-200 p-3 rounded-xl mb-4 text-sm text-gray-700 line-clamp-2 italic">Replying to: "{replyPost.content}"</div>
+               <Textarea 
+                 placeholder="Draft your reply..." 
+                 value={replyContent}
+                 onChange={(e) => setReplyContent(e.target.value)}
+                 className="min-h-[120px] mb-4 border-purple-100 focus:border-purple-300 resize-none"
+                 maxLength={280}
+               />
+               <div className="flex justify-between items-center text-sm font-medium">
+                  <span className="text-gray-500">Your Balance: <b className="geist-mono">{(user?.usdcBalance || 0).toFixed(2)} USDC</b></span>
+                  <span className="text-gray-400">{replyContent.length}/280</span>
+               </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReplyPost(null)}>Cancel</Button>
+            <Button 
+               disabled={!replyContent.trim() || (user?.usdcBalance || 0) < 0.5 || replyMutation.isPending} 
+               onClick={() => replyMutation.mutate()}
+               className="bg-purple-600 hover:bg-purple-700 text-white font-bold"
+            >
+              { (user?.usdcBalance || 0) < 0.5 ? 'Insufficient Balance' : `Post Reply — 0.5 USDC`}
             </Button>
           </DialogFooter>
         </DialogContent>
