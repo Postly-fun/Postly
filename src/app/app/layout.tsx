@@ -6,6 +6,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import Sidebar from '@/components/layout/Sidebar';
 import RightSidebar from '@/components/layout/RightSidebar';
 import AuthModal from '@/components/auth/AuthModal';
+import CreatePostModal from '@/components/post/CreatePostModal';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, setUser, setIsLoading, isLoading, isAuthModalOpen, setAuthModalOpen } = useStore();
@@ -43,6 +44,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex justify-center min-h-screen app-page bg-transparent text-gray-900 selection:bg-purple-200">
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setAuthModalOpen(false)} />
+      <CreatePostModal />
       
       <div className="hidden sm:block">
         <Sidebar currentPath={pathname} user={user} />

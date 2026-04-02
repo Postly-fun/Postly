@@ -21,6 +21,8 @@ interface StoreState {
   setIsLoading: (isLoading: boolean) => void;
   isAuthModalOpen: boolean;
   setAuthModalOpen: (isAuthModalOpen: boolean) => void;
+  isCreatePostModalOpen: boolean;
+  setCreatePostModalOpen: (isCreatePostModalOpen: boolean) => void;
 }
 
 export const useStore = create<StoreState>((set) => ({
@@ -33,4 +35,6 @@ export const useStore = create<StoreState>((set) => ({
   setIsLoading: (isLoading) => set({ isLoading }),
   isAuthModalOpen: false,
   setAuthModalOpen: (isAuthModalOpen) => set({ isAuthModalOpen }),
+  isCreatePostModalOpen: false,
+  setCreatePostModalOpen: (isCreatePostModalOpen) => set({ isCreatePostModalOpen }),
 }));

@@ -8,7 +8,7 @@ import { clearAuthCookie } from '@/lib/auth';
 export default function Sidebar({ currentPath, user, mobile = false }: any) {
   const router = useRouter();
   
-  const { setAuthModalOpen } = useStore();
+  const { setAuthModalOpen, setCreatePostModalOpen } = useStore();
 
   const links = [
     { name: 'Home Feed', href: '/app', icon: Home },
@@ -65,7 +65,10 @@ export default function Sidebar({ currentPath, user, mobile = false }: any) {
         </nav>
         
         {user ? (
-          <Button className="w-full mt-6 bg-purple-600 hover:bg-purple-700 text-white rounded-full h-12 text-lg shadow-md hover:shadow-lg transition-all">
+          <Button 
+            onClick={() => setCreatePostModalOpen(true)}
+            className="w-full mt-6 bg-purple-600 hover:bg-purple-700 text-white rounded-full h-12 text-lg shadow-md hover:shadow-lg transition-all"
+          >
             New Post
           </Button>
         ) : (
