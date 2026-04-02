@@ -18,14 +18,23 @@ import {
 import { toast } from 'sonner';
 import QRCode from 'react-qr-code';
 import { formatDistanceToNow } from 'date-fns';
+import { useEffect } from 'react';
 
 export default function WalletPage() {
   const { user, setUser } = useStore();
   const queryClient = useQueryClient();
-  const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
   const [depositModalOpen, setDepositModalOpen] = useState(false);
-  const [privateKey, setPrivateKey] = useState<string | null>(null);
-  const [isExportLoading, setIsExportLoading] = useState(false);
+  const [withdrawAddress, setWithdrawAddress] = useState('');
+  const [withdrawAmount, setWithdrawAmount] = useState('');
+  const [solBalance, setSolBalance] = useState<number | null>(null);
+  const [isWithdrawLoading, setIsWithdrawLoading] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      checkDepositMutation.mutate();
+    }
+  }, []);
 
   const { data: txData, isLoading } = useQuery({
     queryKey: ['transactions'],
@@ -43,43 +52,61 @@ export default function WalletPage() {
     onSuccess: (data) => {
       if (data.deposited > 0) {
         toast.success(`Deposit confirmed! ${data.deposited} USDC added to your balance.`);
-      } else {
+      } else if (data.message !== 'No new deposits found.') {
         toast.info(data.message || 'No new deposits found.');
       }
       if (user) setUser({ ...user, usdcBalance: data.balance });
+      if (data.solBalance !== undefined) setSolBalance(data.solBalance);
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
     }
   });
 
-  const fetchPrivateKey = async () => {
-    setIsExportLoading(true);
-    try {
-      const res = await fetch('/api/wallet/export');
+  const withdrawMutation = useMutation({
+    mutationFn: async ({ toAddress, amount }: { toAddress: string; amount: number }) => {
+      const res = await fetch('/api/wallet/withdraw', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ toAddress, amount })
+      });
       const data = await res.json();
-      if (data.privateKey) {
-        setPrivateKey(data.privateKey);
-      } else {
-        toast.error(data.error || 'Failed to export private key');
-      }
-    } catch (err) {
-      toast.error('Failed to export private key');
-    } finally {
-      setIsExportLoading(false);
+      if (!res.ok) throw new Error(data.error || 'Withdrawal failed');
+      return data;
+    },
+    onSuccess: (data) => {
+      toast.success('Withdrawal successful!');
+      if (user) setUser({ ...user, usdcBalance: data.balance });
+      setWithdrawModalOpen(false);
+      setWithdrawAddress('');
+      setWithdrawAmount('');
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      // Refresh SOL balance after withdrawal as well
+      checkDepositMutation.mutate();
+    },
+    onError: (error: any) => {
+      toast.error(error.message);
     }
-  };
-
-  const copyPrivateKey = () => {
-    if (privateKey) {
-      navigator.clipboard.writeText(privateKey);
-      toast.success('Private key copied! Do NOT share this with anyone.');
-    }
-  };
+  });
 
   const copyAddress = () => {
     if (user?.walletAddress) {
       navigator.clipboard.writeText(user.walletAddress);
       toast.success('Address copied to clipboard');
     }
+  };
+
+  const handleWithdraw = () => {
+    if (!user) return;
+    const amount = parseFloat(withdrawAmount);
+    if (!withdrawAddress) return toast.error('Please enter a destination address');
+    if (isNaN(amount) || amount <= 0) return toast.error('Please enter a valid amount');
+    if (amount > user.usdcBalance) return toast.error('Insufficient USDC balance');
+    
+    // Check SOL balance for fees (approx 0.002 SOL)
+    if (solBalance !== null && solBalance < 0.002) {
+      return toast.error('Insufficient SOL for transaction fees. Please deposit at least 0.005 SOL.');
+    }
+
+    withdrawMutation.mutate({ toAddress: withdrawAddress, amount });
   };
 
   if (!user) return null;
@@ -96,8 +123,16 @@ export default function WalletPage() {
           <span className="font-medium text-purple-100">Custodial USDC Balance</span>
         </div>
         
-        <h2 className="text-5xl geist-mono font-bold mb-2">{user.usdcBalance.toFixed(2)}</h2>
-        <p className="text-purple-200 mb-8">≈ ${(user.usdcBalance).toFixed(2)} USD</p>
+        <div className="mb-8">
+          <h2 className="text-5xl geist-mono font-bold mb-2">{user.usdcBalance.toFixed(2)}</h2>
+          <p className="text-purple-200">≈ ${(user.usdcBalance).toFixed(2)} USD</p>
+          {solBalance !== null && (
+            <p className="text-xs text-purple-100/60 mt-2 flex items-center gap-1">
+              <Wallet className="w-3 h-3" />
+              {solBalance.toFixed(4)} SOL (for network fees)
+            </p>
+          )}
+        </div>
 
         <div className="flex gap-4">
           <Button 
@@ -107,10 +142,10 @@ export default function WalletPage() {
             <ArrowDownLeft className="mr-2" /> Deposit
           </Button>
           <Button 
-            onClick={() => setExportModalOpen(true)}
+            onClick={() => setWithdrawModalOpen(true)}
             className="flex-1 border-white/30 hover:bg-white/10 text-white hover:text-white rounded-full py-6 font-bold text-lg"
           >
-            <ArrowUpRight className="mr-2" /> Export Key
+            <ArrowUpRight className="mr-2" /> Withdraw
           </Button>
         </div>
       </div>
@@ -196,63 +231,84 @@ export default function WalletPage() {
          )}
       </div>
 
-      {/* Export Modal */}
-      <Dialog open={exportModalOpen} onOpenChange={(open) => {
-        setExportModalOpen(open);
-        if (!open) setPrivateKey(null);
-      }}>
+      {/* Withdraw Modal */}
+      <Dialog open={withdrawModalOpen} onOpenChange={setWithdrawModalOpen}>
         <DialogContent className="sm:max-w-md bg-white rounded-3xl border-none shadow-2xl">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-bold flex items-center gap-2 text-red-600">
-               <ArrowUpRight className="w-6 h-6" />
-               Export Private Key
+            <DialogTitle className="text-2xl font-bold flex items-center gap-2 text-purple-900">
+               <ArrowUpRight className="w-6 h-6 text-purple-600" />
+               Withdraw USDC
             </DialogTitle>
-            <DialogDescription className="text-gray-500 pt-2 text-base font-medium">
-               This will expose your Postly wallet's private key. You can use it to import your funds into apps like Phantom or Solflare.
+            <DialogDescription className="text-gray-500 pt-2 text-base">
+               Send your USDC to any Solana wallet address.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="py-8">
-            {!privateKey ? (
-              <div className="bg-red-50 border border-red-100 p-6 rounded-2xl flex flex-col items-center gap-4">
-                <p className="text-sm text-red-700 font-bold text-center">
-                  WARNING: Never share your private key with anyone! Anyone who has your private key can steal your funds.
-                </p>
-                <Button 
-                  onClick={fetchPrivateKey}
-                  disabled={isExportLoading}
-                  className="w-full bg-red-600 hover:bg-red-700 text-white rounded-xl h-14 font-bold text-lg shadow-xl shadow-red-500/20"
+          <div className="flex flex-col gap-6 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="address" className="text-sm font-bold text-gray-700 ml-1">Destination Solana Address</Label>
+              <Input
+                id="address"
+                placeholder="Enter Solana address (e.g. Phantom, Solflare)"
+                value={withdrawAddress}
+                onChange={(e) => setWithdrawAddress(e.target.value)}
+                className="rounded-2xl h-14 border-purple-100 focus:ring-purple-500 bg-gray-50/50"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex justify-between ml-1">
+                <Label htmlFor="amount" className="text-sm font-bold text-gray-700">Amount to Withdraw</Label>
+                <span 
+                  className="text-xs text-purple-600 font-bold cursor-pointer hover:underline"
+                  onClick={() => setWithdrawAmount(user.usdcBalance.toString())}
                 >
-                  {isExportLoading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : 'Reveal Private Key'}
-                </Button>
+                  Max: {user.usdcBalance.toFixed(2)} USDC
+                </span>
               </div>
-            ) : (
-              <div className="flex flex-col gap-4">
-                <div className="relative group">
-                  <textarea 
-                    readOnly
-                    value={privateKey}
-                    className="w-full geist-mono text-sm p-4 h-24 rounded-2xl bg-gray-50 text-gray-900 border-2 border-gray-100 focus:outline-none cursor-pointer hover:bg-gray-100 transition-all font-medium break-all resize-none"
-                    onClick={copyPrivateKey}
-                  />
-                  <button onClick={copyPrivateKey} className="absolute right-3 bottom-3 text-purple-500 p-2 bg-white shadow-sm border border-purple-50 rounded-lg hover:bg-purple-50 transition-colors">
-                    <Copy className="w-4 h-4" />
-                  </button>
-                </div>
-                <p className="text-xs text-gray-400 text-center italic">
-                  Copy and import this key into Phantom or Solflare as a "Secret Key" or "Private Key".
-                </p>
+              <div className="relative">
+                <Input
+                  id="amount"
+                  type="number"
+                  placeholder="0.00"
+                  value={withdrawAmount}
+                  onChange={(e) => setWithdrawAmount(e.target.value)}
+                  className="rounded-2xl h-14 border-purple-100 focus:ring-purple-500 bg-gray-50/50 pr-16"
+                />
+                <span className="absolute right-4 top-4 font-bold text-gray-400">USDC</span>
               </div>
-            )}
+            </div>
+
+            <div className="bg-purple-50 p-4 rounded-2xl border border-purple-100">
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-xs font-bold text-purple-700">Network Fee Est.</span>
+                <span className="text-xs font-bold text-purple-900">~0.000005 SOL</span>
+              </div>
+              <p className="text-[10px] text-purple-400 leading-tight">
+                Your Postly wallet must have at least 0.002 SOL to successfully broadcast the transaction. 
+                {solBalance !== null && (
+                  <span className={`block mt-1 font-bold ${solBalance < 0.002 ? 'text-red-500' : 'text-green-600'}`}>
+                    Current SOL Balance: {solBalance.toFixed(5)} SOL
+                  </span>
+                )}
+              </p>
+            </div>
           </div>
 
-          <DialogFooter className="pt-2">
+          <DialogFooter className="flex flex-col gap-2 pt-2">
+            <Button
+              onClick={handleWithdraw}
+              disabled={withdrawMutation.isPending}
+              className="w-full bg-purple-600 hover:bg-purple-700 text-white rounded-2xl h-14 font-bold text-lg shadow-xl shadow-purple-500/20"
+            >
+              {withdrawMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : 'Confirm Withdrawal'}
+            </Button>
             <Button
               variant="outline"
-              className="w-full border-2 border-purple-100 text-purple-600 hover:bg-purple-50 rounded-2xl h-14 font-bold text-lg"
-              onClick={() => setExportModalOpen(false)}
+              className="w-full border-2 border-purple-50 text-gray-400 hover:bg-gray-50 rounded-2xl h-14 font-bold text-lg"
+              onClick={() => setWithdrawModalOpen(false)}
             >
-              Close
+              Cancel
             </Button>
           </DialogFooter>
         </DialogContent>

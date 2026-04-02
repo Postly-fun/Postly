@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getUserSession } from '@/lib/auth';
-import { getUsdcBalance, connection } from '@/lib/solana';
+import { getUsdcBalance, getSolBalance, connection } from '@/lib/solana';
 import { PublicKey } from '@solana/web3.js';
 import { getAssociatedTokenAddressSync } from '@solana/spl-token';
 
@@ -15,7 +15,10 @@ export async function POST(req: Request) {
     if (!user) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
     // 1. Fetch current real-world on-chain balance
-    const currentOnChainBalance = await getUsdcBalance(user.walletAddress);
+    const [currentOnChainBalance, currentSolBalance] = await Promise.all([
+      getUsdcBalance(user.walletAddress),
+      getSolBalance(user.walletAddress)
+    ]);
 
     // 2. Calculate the difference since we last checked
     const depositDelta = currentOnChainBalance - user.lastOnChainBalance;
@@ -67,6 +70,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ 
       balance: updatedUser.usdcBalance,
+      solBalance: currentSolBalance,
       deposited: Math.max(0, depositDelta),
       txSignature: latestTx,
       message: depositDelta > 0 ? 'Deposit found!' : 'No new deposits found.'

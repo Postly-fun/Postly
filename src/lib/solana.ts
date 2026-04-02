@@ -21,6 +21,16 @@ export async function getUsdcBalance(walletAddress: string): Promise<number> {
   }
 }
 
+export async function getSolBalance(walletAddress: string): Promise<number> {
+  try {
+    const owner = new PublicKey(walletAddress);
+    const balance = await connection.getBalance(owner);
+    return balance / 1_000_000_000; // SOL has 9 decimals
+  } catch (err) {
+    return 0;
+  }
+}
+
 export async function transferUsdc(fromKeypair: Keypair, toAddress: string, amount: number): Promise<string> {
   const usdcMintAddress = process.env.USDC_MINT_ADDRESS || 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
   const usdcMint = new PublicKey(usdcMintAddress);
