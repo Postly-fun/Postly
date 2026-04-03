@@ -13,7 +13,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from 'sonner';
 import QRCode from 'react-qr-code';
@@ -295,7 +294,7 @@ export default function WalletPage() {
             </div>
           </div>
 
-          <DialogFooter className="flex flex-col gap-2 pt-2">
+          <div className="flex flex-col gap-3 mt-4">
             <Button
               onClick={handleWithdraw}
               disabled={withdrawMutation.isPending}
@@ -310,7 +309,7 @@ export default function WalletPage() {
             >
               Cancel
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -349,7 +348,7 @@ export default function WalletPage() {
              </p>
           </div>
 
-          <DialogFooter className="pt-2">
+          <div className="pt-2">
             <Button
               variant="outline"
               className="w-full border-2 border-purple-100 text-purple-600 hover:bg-purple-50 rounded-2xl h-14 font-bold text-lg"
@@ -357,7 +356,7 @@ export default function WalletPage() {
             >
               Close
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
