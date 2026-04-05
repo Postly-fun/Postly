@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useStore } from '@/store/useStore';
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Mic, X } from 'lucide-react';
+import { Mic, X, ImageIcon, Link as LinkIcon, Upload, Loader2 } from 'lucide-react';
 import VoiceRecorder from './VoiceRecorder';
 
 export default function CreatePostModal() {
@@ -19,11 +19,42 @@ export default function CreatePostModal() {
   const [usdcAmount, setUsdcAmount] = useState('0.1');
   const [voiceUrl, setVoiceUrl] = useState<string | null>(null);
   const [voiceDuration, setVoiceDuration] = useState<number | null>(null);
+  const [imageUrl, setImageUrl] = useState('');
   const [showRecorder, setShowRecorder] = useState(false);
+  const [showImageInput, setShowImageInput] = useState(false);
+  const [isImageUploading, setIsImageUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsImageUploading(true);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setImageUrl(data.url);
+        setShowImageInput(true);
+      } else {
+        throw new Error(data.error);
+      }
+    } catch (err: any) {
+      toast.error('Failed to upload image: ' + err.message);
+    } finally {
+      setIsImageUploading(false);
+    }
+  };
 
   const cost = parseFloat(usdcAmount) || 0;
   const stealPrice = cost * 2;
-  const canPost = (content.trim().length > 0 || voiceUrl) && cost >= 0.1 && (user?.usdcBalance || 0) >= cost;
+  const canPost = (content.trim().length > 0 || voiceUrl || imageUrl) && cost >= 0.1 && (user?.usdcBalance || 0) >= cost;
 
   const postMutation = useMutation({
     mutationFn: async () => {
@@ -35,6 +66,7 @@ export default function CreatePostModal() {
           usdcAmount: cost,
           voiceUrl,
           voiceDuration,
+          imageUrl: imageUrl.trim() || undefined,
         })
       });
       const json = await res.json();
@@ -45,7 +77,9 @@ export default function CreatePostModal() {
       setContent('');
       setVoiceUrl(null);
       setVoiceDuration(null);
+      setImageUrl('');
       setShowRecorder(false);
+      setShowImageInput(false);
       toast.success('Post published! Your USDC is locked in.');
       queryClient.invalidateQueries({ queryKey: ['posts'] });
       if (user) setUser({ ...user, usdcBalance: user.usdcBalance - cost });
@@ -82,34 +116,93 @@ export default function CreatePostModal() {
                 autoFocus
               />
 
-              <div className="mb-4">
-                {showRecorder ? (
-                  <VoiceRecorder 
-                    onUploadComplete={(url, dur) => {
-                      setVoiceUrl(url);
-                      setVoiceDuration(dur);
-                    }} 
-                    onDiscard={() => {
-                      setVoiceUrl(null);
-                      setVoiceDuration(null);
-                      setShowRecorder(false);
-                    }}
-                  />
-                ) : (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowRecorder(true)}
-                    className="flex items-center gap-2 text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-full px-4 h-9 font-bold"
-                  >
-                    <Mic className="w-4 h-4" />
-                    {voiceUrl ? 'Voice Message Added' : 'Add Voice Message'}
-                    {voiceUrl && <X className="w-3 h-3 ml-1 text-purple-400" onClick={(e) => {
-                      e.stopPropagation();
-                      setVoiceUrl(null);
-                      setVoiceDuration(null);
-                    }} />}
-                  </Button>
+              <div className="mb-4 flex flex-wrap gap-2">
+                {!showRecorder && !showImageInput && (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowRecorder(true)}
+                      className="flex items-center gap-2 text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-full px-4 h-9 font-bold"
+                    >
+                      <Mic className="w-4 h-4" />
+                      {voiceUrl ? 'Voice Message Added' : 'Add Voice'}
+                      {voiceUrl && <X className="w-3 h-3 ml-1 text-purple-400" onClick={(e) => {
+                        e.stopPropagation();
+                        setVoiceUrl(null);
+                        setVoiceDuration(null);
+                      }} />}
+                    </Button>
+
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowImageInput(true)}
+                      className="flex items-center gap-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-full px-4 h-9 font-bold"
+                    >
+                      <ImageIcon className="w-4 h-4" />
+                      {imageUrl ? 'Image/GIF Added' : 'Add GIF/Image'}
+                      {imageUrl && <X className="w-3 h-3 ml-1 text-blue-400" onClick={(e) => {
+                        e.stopPropagation();
+                        setImageUrl('');
+                      }} />}
+                    </Button>
+                  </>
+                )}
+
+                {showRecorder && (
+                  <div className="w-full">
+                    <VoiceRecorder 
+                      onUploadComplete={(url, dur) => {
+                        setVoiceUrl(url);
+                        setVoiceDuration(dur);
+                      }} 
+                      onDiscard={() => {
+                        setVoiceUrl(null);
+                        setVoiceDuration(null);
+                        setShowRecorder(false);
+                      }}
+                    />
+                  </div>
+                )}
+
+                {showImageInput && (
+                  <div className="w-full flex items-center gap-2 bg-blue-50/50 p-2 rounded-xl border border-blue-100">
+                    <input 
+                      type="file" 
+                      accept="image/*,video/webm" 
+                      className="hidden" 
+                      ref={fileInputRef} 
+                      onChange={handleImageUpload} 
+                    />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isImageUploading}
+                      className="bg-white rounded-lg border border-blue-200 text-blue-600 hover:bg-blue-50 h-9 px-3 shrink-0 shadow-sm gap-2"
+                    >
+                      {isImageUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                      <span className="hidden sm:inline">Upload</span>
+                    </Button>
+                    <span className="text-blue-300 text-sm">or</span>
+                    <LinkIcon className="w-4 h-4 text-blue-400 shrink-0" />
+                    <Input 
+                      placeholder="Paste Image/GIF Link..."
+                      value={imageUrl}
+                      onChange={(e) => setImageUrl(e.target.value)}
+                      className="border-none bg-transparent focus-visible:ring-0 shadow-none text-sm placeholder:text-blue-400 px-1"
+                      autoFocus
+                    />
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => setShowImageInput(false)}
+                      className="rounded-full w-8 h-8 p-0 text-blue-500 hover:bg-blue-100 shrink-0"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
                 )}
               </div>
               

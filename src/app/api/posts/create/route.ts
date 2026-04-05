@@ -10,10 +10,10 @@ export async function POST(req: Request) {
     const session = await getUserSession();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { content, usdcAmount, voiceUrl, voiceDuration } = await req.json();
+    const { content, usdcAmount, voiceUrl, voiceDuration, imageUrl } = await req.json();
 
-    if (!content && !voiceUrl) {
-      return NextResponse.json({ error: 'Post must have content or a voice message' }, { status: 400 });
+    if (!content && !voiceUrl && !imageUrl) {
+      return NextResponse.json({ error: 'Post must have content, voice, or an image/gif' }, { status: 400 });
     }
 
     if (usdcAmount < MIN_POST_COST) {
@@ -36,7 +36,7 @@ export async function POST(req: Request) {
 
       const newPost = await tx.post.create({
         data: {
-          content: content || 'Voice Message',
+          content: content || (imageUrl ? 'Shared an Image/GIF' : 'Voice Message'),
           authorId: user.id,
           currentOwnerId: user.id,
           usdcAmountLocked: usdcAmount,
@@ -45,6 +45,7 @@ export async function POST(req: Request) {
           stolenCount: 0,
           voiceUrl,
           voiceDuration,
+          imageUrl,
         }
       });
 

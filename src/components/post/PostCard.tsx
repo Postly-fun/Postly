@@ -85,6 +85,12 @@ export function PostCard({ post, onSteal, onReply, onBoost }: any) {
         {post.content}
       </div>
 
+      {post.imageUrl && (
+        <div className="pl-13 mb-4 pr-4">
+          <img src={post.imageUrl} alt="Post content" className="w-full max-h-[400px] object-cover rounded-2xl border border-gray-100" />
+        </div>
+      )}
+
       {post.voiceUrl && (
         <div className="pl-13 mb-4">
           <VoicePlayer url={post.voiceUrl} duration={post.voiceDuration} />
