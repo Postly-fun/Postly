@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Shield, Coins, Repeat2, MessageSquare, Rocket, Sparkles, ArrowRight, Wallet, CheckCircle2 } from 'lucide-react';
+import { Shield, Coins, Repeat2, MessageSquare, Rocket, Sparkles, ArrowRight, Wallet, CheckCircle2, Smartphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Accordion,
@@ -328,6 +328,35 @@ export default function LandingPage() {
               </AccordionItem>
             ))}
           </Accordion>
+        </div>
+      </section>
+
+      {/* Mobile App Section */}
+      <section className="py-24 bg-purple-50/50 border-t border-purple-100/50">
+        <div className="container mx-auto px-6 max-w-4xl text-center">
+          <div className="inline-flex items-center justify-center p-4 bg-purple-100 rounded-3xl mb-8">
+            <Smartphone className="w-10 h-10 text-purple-600" />
+          </div>
+          <h2 className="text-4xl md:text-5xl text-gray-900 mb-6 font-bold tracking-tight">Postly in Your Pocket</h2>
+          <p className="text-xl text-gray-600 mb-10 max-w-2xl mx-auto leading-relaxed">
+            We're building the ultimate mobile experience. Native iOS and Android apps are dropping soon with exclusive features, instant push notifications, and seamless one-tap wallet integration.
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <div className="flex items-center gap-4 px-8 py-4 bg-white rounded-2xl border border-gray-200 shadow-sm opacity-70 cursor-not-allowed grayscale">
+              <svg viewBox="0 0 24 24" className="w-8 h-8 fill-gray-900"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.04 2.34-.85 3.73-.8 1.48.06 2.76.65 3.48 1.7-2.92 1.74-2.43 5.48.65 6.64-.67 1.83-1.68 3.53-2.94 4.63zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.35 2.4-1.92 4.35-3.74 4.25z"/></svg>
+              <div className="flex flex-col text-left">
+                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Coming Soon</span>
+                <span className="font-bold text-gray-900 text-lg tracking-tight hover:text-gray-900">App Store</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-4 px-8 py-4 bg-white rounded-2xl border border-gray-200 shadow-sm opacity-70 cursor-not-allowed grayscale">
+              <svg viewBox="0 0 24 24" className="w-8 h-8 fill-gray-900"><path d="M3.5 2C3.12 2 2.8 2.21 2.59 2.53L14.71 14.65 19.34 10.02 3.5 2zM2.5 3.32v17.36c0 .41.31.78.71.93L13.88 15.5 2.5 3.32zM15.42 16.27l1.79 1.79c1.94 1.05 3.2 1.73 3.61 1.94.39.2.82-.01.89-.42.06-.32.06-16.71.06-16.71-.05-.33-.35-.55-.65-.41-.53.25-1.93.95-3.8 1.96L15.42 16.27z"/></svg>
+              <div className="flex flex-col text-left">
+                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Coming Soon</span>
+                <span className="font-bold text-gray-900 text-lg tracking-tight hover:text-gray-900">Google Play</span>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
