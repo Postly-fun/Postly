@@ -9,23 +9,33 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Mic, X } from 'lucide-react';
+import VoiceRecorder from './VoiceRecorder';
 
 export default function CreatePostModal() {
   const { user, setUser, isCreatePostModalOpen, setCreatePostModalOpen } = useStore();
   const queryClient = useQueryClient();
   const [content, setContent] = useState('');
   const [usdcAmount, setUsdcAmount] = useState('0.1');
+  const [voiceUrl, setVoiceUrl] = useState<string | null>(null);
+  const [voiceDuration, setVoiceDuration] = useState<number | null>(null);
+  const [showRecorder, setShowRecorder] = useState(false);
 
   const cost = parseFloat(usdcAmount) || 0;
   const stealPrice = cost * 2;
-  const canPost = content.trim().length > 0 && cost >= 0.1 && (user?.usdcBalance || 0) >= cost;
+  const canPost = (content.trim().length > 0 || voiceUrl) && cost >= 0.1 && (user?.usdcBalance || 0) >= cost;
 
   const postMutation = useMutation({
     mutationFn: async () => {
       const res = await fetch('/api/posts/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content, usdcAmount: cost })
+        body: JSON.stringify({ 
+          content, 
+          usdcAmount: cost,
+          voiceUrl,
+          voiceDuration,
+        })
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
@@ -33,6 +43,9 @@ export default function CreatePostModal() {
     },
     onSuccess: () => {
       setContent('');
+      setVoiceUrl(null);
+      setVoiceDuration(null);
+      setShowRecorder(false);
       toast.success('Post published! Your USDC is locked in.');
       queryClient.invalidateQueries({ queryKey: ['posts'] });
       if (user) setUser({ ...user, usdcBalance: user.usdcBalance - cost });
@@ -64,10 +77,41 @@ export default function CreatePostModal() {
                 placeholder="What's worth paying for?"
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                className="border-none focus-visible:ring-0 text-xl resize-none min-h-[120px] p-0 placeholder:text-gray-400 mb-4"
+                className="border-none focus-visible:ring-0 text-xl resize-none min-h-[120px] p-0 placeholder:text-gray-400 mb-2"
                 maxLength={280}
                 autoFocus
               />
+
+              <div className="mb-4">
+                {showRecorder ? (
+                  <VoiceRecorder 
+                    onUploadComplete={(url, dur) => {
+                      setVoiceUrl(url);
+                      setVoiceDuration(dur);
+                    }} 
+                    onDiscard={() => {
+                      setVoiceUrl(null);
+                      setVoiceDuration(null);
+                      setShowRecorder(false);
+                    }}
+                  />
+                ) : (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowRecorder(true)}
+                    className="flex items-center gap-2 text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-full px-4 h-9 font-bold"
+                  >
+                    <Mic className="w-4 h-4" />
+                    {voiceUrl ? 'Voice Message Added' : 'Add Voice Message'}
+                    {voiceUrl && <X className="w-3 h-3 ml-1 text-purple-400" onClick={(e) => {
+                      e.stopPropagation();
+                      setVoiceUrl(null);
+                      setVoiceDuration(null);
+                    }} />}
+                  </Button>
+                )}
+              </div>
               
               <div className="pt-4 border-t border-gray-100 flex flex-col gap-4">
                  <div className="flex items-center justify-between bg-gray-50 rounded-xl p-4 border border-gray-100">

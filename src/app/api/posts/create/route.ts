@@ -10,10 +10,14 @@ export async function POST(req: Request) {
     const session = await getUserSession();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { content, usdcAmount } = await req.json();
+    const { content, usdcAmount, voiceUrl, voiceDuration } = await req.json();
 
-    if (!content || usdcAmount < MIN_POST_COST) {
-      return NextResponse.json({ error: 'Invalid post parameters' }, { status: 400 });
+    if (!content && !voiceUrl) {
+      return NextResponse.json({ error: 'Post must have content or a voice message' }, { status: 400 });
+    }
+
+    if (usdcAmount < MIN_POST_COST) {
+      return NextResponse.json({ error: 'Invalid post cost' }, { status: 400 });
     }
 
     const user = await prisma.user.findUnique({ where: { id: session.userId } });
@@ -32,13 +36,15 @@ export async function POST(req: Request) {
 
       const newPost = await tx.post.create({
         data: {
-          content,
+          content: content || 'Voice Message',
           authorId: user.id,
           currentOwnerId: user.id,
           usdcAmountLocked: usdcAmount,
           stealPrice: usdcAmount * 2,
           isBoosted: false,
           stolenCount: 0,
+          voiceUrl,
+          voiceDuration,
         }
       });
 

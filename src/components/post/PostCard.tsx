@@ -6,6 +6,7 @@ import { formatDistanceToNow } from 'date-fns';
 import Link from 'next/link';
 import { useState } from 'react';
 import { useStore } from '@/store/useStore';
+import VoicePlayer from './VoicePlayer';
 
 export function PostCard({ post, onSteal, onReply, onBoost }: any) {
   const { user, setAuthModalOpen } = useStore();
@@ -83,6 +84,12 @@ export function PostCard({ post, onSteal, onReply, onBoost }: any) {
       <div className="pl-13 text-gray-800 text-[15px] leading-relaxed mb-3 whitespace-pre-wrap">
         {post.content}
       </div>
+
+      {post.voiceUrl && (
+        <div className="pl-13 mb-4">
+          <VoicePlayer url={post.voiceUrl} duration={post.voiceDuration} />
+        </div>
+      )}
 
       <div className="pl-13 mb-4">
         <div className="flex flex-wrap gap-2 sm:gap-4 bg-purple-50 rounded-xl p-3 border border-purple-100 relative group/info">

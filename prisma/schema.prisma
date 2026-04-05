@@ -41,6 +41,8 @@ model Post {
   id               String    @id @default(cuid())
   content          String
   imageUrl         String?
+  voiceUrl         String?
+  voiceDuration    Int?
   
   authorId         String
   author           User      @relation("AuthoredPosts", fields: [authorId], references: [id])
@@ -124,5 +126,4 @@ model Notification {
   message   String
   postId    String?
   isRead    Boolean  @default(false)
-  createdAt DateTime @default(now())
 }
