@@ -126,4 +126,5 @@ model Notification {
   message   String
   postId    String?
   isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
 }
