@@ -35,6 +35,7 @@ model User {
   notifications        Notification[]
   stealsMade           StealHistory[] @relation("Stealer")
   stealsReceived       StealHistory[] @relation("StolenFrom")
+  wonMatches           VersusMatch[]  @relation("WonMatches")
 }
 
 model Post {
@@ -68,6 +69,10 @@ model Post {
   stealHistory     StealHistory[]
   reactions        Reaction[]
   transactions     Transaction[]
+  
+  inVersusMatch    Boolean   @default(false)
+  challengerMatches VersusMatch[] @relation("ChallengerPost")
+  challengedMatches VersusMatch[] @relation("ChallengedPost")
 }
 
 model Reaction {
@@ -127,4 +132,22 @@ model Notification {
   postId    String?
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
+}
+
+model VersusMatch {
+  id           String    @id @default(cuid())
+  post1Id      String    
+  post1        Post      @relation("ChallengerPost", fields: [post1Id], references: [id])
+  post2Id      String    
+  post2        Post      @relation("ChallengedPost", fields: [post2Id], references: [id])
+  
+  status       String    // "PENDING", "ACTIVE", "COMPLETED", "CANCELLED"
+  poolAmount   Float
+  
+  expiresAt    DateTime?
+  winnerId     String?
+  winner       User?     @relation("WonMatches", fields: [winnerId], references: [id])
+  
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 }

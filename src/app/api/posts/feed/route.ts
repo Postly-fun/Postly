@@ -22,6 +22,14 @@ export async function GET(req: Request) {
         currentOwner: { select: { username: true, displayName: true, avatarUrl: true } },
         _count: {
           select: { reactions: true }
+        },
+        challengerMatches: {
+          where: { status: 'ACTIVE' },
+          include: { post2: { include: { currentOwner: { select: { username: true } } } } }
+        },
+        challengedMatches: {
+          where: { status: 'ACTIVE' },
+          include: { post1: { include: { currentOwner: { select: { username: true } } } } }
         }
       }
     });

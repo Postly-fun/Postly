@@ -1,17 +1,24 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, Repeat2, Rocket, Smile, MoreHorizontal } from 'lucide-react';
+import { MessageSquare, Repeat2, Rocket, Smile, MoreHorizontal, Sword, Timer } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import Link from 'next/link';
 import { useState } from 'react';
 import { useStore } from '@/store/useStore';
 import VoicePlayer from './VoicePlayer';
+import ChallengeModal from './ChallengeModal';
 
 export function PostCard({ post, onSteal, onReply, onBoost }: any) {
   const { user, setAuthModalOpen } = useStore();
   const [localReactions, setLocalReactions] = useState(post.reactions || []);
   const [showEmojis, setShowEmojis] = useState(false);
+  const [showChallengeModal, setShowChallengeModal] = useState(false);
+
+  // Check if post is in an ACTIVE match
+  const activeMatch = post.challengerMatches?.find((m: any) => m.status === 'ACTIVE') || post.challengedMatches?.find((m: any) => m.status === 'ACTIVE');
+  const isChallenger = activeMatch && activeMatch.post1Id === post.id;
+  const opponent = activeMatch ? (isChallenger ? activeMatch.post2.currentOwner : activeMatch.post1.currentOwner) : null;
 
   const handleReact = async (emoji: string) => {
     if (!user) {
@@ -44,6 +51,21 @@ export function PostCard({ post, onSteal, onReply, onBoost }: any) {
 
   return (
     <div className="bg-white border-b border-gray-100 p-4 hover:bg-gray-50/50 transition-colors">
+      {activeMatch && opponent && (
+        <div className="mb-3 flex items-center justify-between bg-orange-50 border border-orange-200 rounded-xl p-2 px-3 shadow-sm">
+          <div className="flex items-center gap-2">
+             <Sword className="text-orange-500 w-4 h-4" />
+             <span className="text-xs font-bold text-orange-800 uppercase tracking-tight">Versus Match</span>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-orange-700 font-medium overflow-hidden">
+             <span className="truncate">Opponent: @{opponent.username}</span>
+             <span className="text-orange-300">|</span>
+             <Timer className="w-3 h-3" />
+             <span className="geist-mono">{formatDistanceToNow(new Date(activeMatch.expiresAt))} left</span>
+          </div>
+        </div>
+      )}
+
       <div className="flex justify-between items-start mb-2">
         <Link href={`/app/profile/${post.author.username}`} className="flex items-center gap-3">
           <Avatar className="w-10 h-10 border border-gray-200">
@@ -165,6 +187,21 @@ export function PostCard({ post, onSteal, onReply, onBoost }: any) {
           )}
         </div>
 
+        {!post.inVersusMatch && (
+          <button 
+            onClick={() => {
+              if (!user) setAuthModalOpen(true);
+              else setShowChallengeModal(true);
+            }} 
+            className="flex items-center gap-2 group hover:text-orange-500 transition-colors"
+          >
+            <div className="p-2 rounded-full group-hover:bg-orange-50 transition-colors">
+              <Sword className="w-4 h-4" />
+            </div>
+            <span className="text-sm">Versus</span>
+          </button>
+        )}
+
         <button onClick={() => onSteal(post)} className="flex items-center gap-2 group hover:text-green-500 transition-colors">
           <div className="p-2 rounded-full group-hover:bg-green-50 transition-colors">
             <Repeat2 className="w-5 h-5" />
@@ -172,6 +209,12 @@ export function PostCard({ post, onSteal, onReply, onBoost }: any) {
           <span className="text-sm geist-mono font-medium">{post.stolenCount > 0 ? post.stolenCount : 'Steal'}</span>
         </button>
       </div>
+
+      <ChallengeModal 
+        isOpen={showChallengeModal} 
+        onClose={() => setShowChallengeModal(false)} 
+        challengedPost={post} 
+      />
     </div>
   );
 }
